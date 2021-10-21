@@ -1,0 +1,22 @@
+---
+  - hosts: Linux
+    become: yes
+    gather_facts: no
+
+    tasks:
+      - name: Change rsyslog.conf to stop sending to NCM
+        ansible.builtin.replace:
+          path: /etc/rsyslog.conf
+          regexp: '^\*.debug;mail.none(.+)$'
+          replace: '#*.debug;mail.none                       -/opt/Syslog'
+
+      - name: Change rsyslog.conf to stop sending to NCM part 2
+        ansible.builtin.replace:
+          path: /etc/rsyslog.conf
+          regexp: '^\local5.debug(.+)$'
+          replace: '#local5.debug                    /opt/ssh.log'
+
+      - name: restart rsyslog
+        service:
+          name=rsyslog
+          state=restarted
