@@ -1,0 +1,26 @@
+---
+  - hosts: all
+    gather_facts: no
+    tasks:
+      - name: Stop services
+        win_service:
+          name: '{{ item }}'
+          state: stopped
+        with_items:
+          - nsrd
+          - gstd
+          - nsrexecd
+          - service_name_go_here
+        tags: stop_services
+
+      - name: Ensure services are started
+        win_service:
+          name: '{{ item }}'
+          state: started
+        with_items:
+          - nsrd
+          - gstd
+          - nsrexecd
+          - service_name_go_here
+        tags: start_services
+        tags: status_services
