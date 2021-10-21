@@ -1,0 +1,11 @@
+---
+- name: Display some facts
+  hosts: all
+  tasks:
+    - name: Display all facts
+      debug:
+        var: ansible_facts
+
+    - name: Display a single fact
+      debug:
+        var: ansible_facts['distribution']
