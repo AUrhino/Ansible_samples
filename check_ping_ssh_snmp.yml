@@ -1,0 +1,47 @@
+---
+
+- name: Check Ping, SSH, and SNMP Access
+  connection: local
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ping check (7)
+      ignore_errors: true
+      shell: /usr/bin/fping  {{ inventory_hostname }} || echo "Ping is DOWN"
+      register: ping_out
+      failed_when: ping_out.stdout is search("DOWN")
+      delegate_to: localhost
+      no_log: true
+#    - name: Output
+#      debug:
+#        msg: "{{ inventory_hostname }} on port: 7 result: {{ ping_out.stdout }} "
+
+    - name: ssh check (22)
+      shell: nc -zvnw1 {{ inventory_hostname }} 22 || echo "ssh is DOWN"
+      register: ssh_out
+      failed_when: ssh_out.stdout is search("DOWN")
+      ignore_errors: true
+      delegate_to: localhost
+      no_log: true
+#    - name: Output
+#      debug:
+#        msg: "{{ inventory_hostname }} on port: 22 result: {{ ssh_out.stdout }} "
+
+    - name: snmp check (161)
+      shell: nc -zvnw1 {{ inventory_hostname }} 161 || echo "snmp is DOWN"
+      register: snmp_out
+      failed_when: snmp_out.stdout is search("DOWN")
+      ignore_errors: true
+      delegate_to: localhost
+      no_log: true
+ #   - name: Output
+ #     debug:
+ #       msg: "{{ inventory_hostname }} on port: 161 result: {{ snmp_out.stdout }} "
+
+
+
+    - name: Print results - Summary
+      debug:
+        msg: |
+          Device: '{{ inventory_hostname }}: Ping {{ ping_out.stdout }}, SSH: {{ ssh_out.stderr }}, SNMP: {{ snmp_out.stderr }}'
+
