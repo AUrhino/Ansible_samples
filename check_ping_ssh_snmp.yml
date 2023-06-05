@@ -1,18 +1,11 @@
----
-
-# Quick playbook to ping, ssh (via nc) and snmpwalk (assume v2 with comm string of public)
+# Quick playbook to ping, ssh (via nc) and snmpwalk (assume v2 with comm string of ddgsoa10)
 #  Output saved to a csv file.
-# Ver 1.0
-#
-# Update the inventory via:
-#  /etc/ansible/hosts
-# Run the playbook via:
-#  rm test_connectivity_results.csv; ansible-playbook test_connectivity.yaml
+# Ver 1.2
 #
 
-- name: WOW Test Connectivity
+- name: Connectivity testing PING, SSH and SNMP
   hosts: all
-  #hosts: nul-wow-20
+  #hosts: nul-w*
   connection: local
   gather_facts: false
 
@@ -24,7 +17,6 @@
     - name: Testing Ping to the device
       tags:
         - ping
-        - all
       shell: /usr/bin/fping {{ inventory_hostname }}
       register: ping_result
       ignore_errors: true
@@ -33,9 +25,9 @@
     - name: Testing SSH via nc to the device
       tags:
         - ssh
-        - all
-      #shell: ssh -o ConnectTimeout=5 {{ inventory_hostname }} exit
-      shell: /usr/bin/nc -zvnw1 {{ inventory_hostname }} 22 || echo "ssh is DOWN"
+      #shell: ssh -o ConnectTimeout=5 {{ inventory_hostname }} exit   # Turned off as too hard at the moment. Will just nc to port
+      #Sample NetCat on port 22:    nc -vn -w1 10.37.32.244 22
+      shell: /usr/bin/nc -vnw1 {{ inventory_hostname }} 22
       register: ssh_result
       ignore_errors: true
       delegate_to: localhost
@@ -43,13 +35,17 @@
     - name: Testing SNMP to the device
       tags:
         - snmp
-        - all
-      shell: snmpwalk -v 2c -c public {{ inventory_hostname }} 1.3.6.1.2.1.1.5.0
+      #shell: snmpwalk -v2c -c {{ inventory_hostname.comms_vstring }} {{ inventory_hostname }} 1.3.6.1.2.1.1.5.0 # Not used at the moment. Too slow
+      shell: /usr/bin/nc -zuvnw1 {{ inventory_hostname }} 161
       register: snmp_result
       ignore_errors: true
       delegate_to: localhost
 
     - name: Create a CSV file
+      tags:
+        - ping
+        - ssh
+        - snmp
       local_action:
         module: file
         path: "{{ csv_file }}"
@@ -57,6 +53,8 @@
       delegate_to: localhost
 
     - name: Append Ping result to the CSV
+      tags:
+        - ping
       local_action:
         module: lineinfile
         path: "{{ csv_file }}"
@@ -64,16 +62,21 @@
       delegate_to: localhost
 
     - name: Append SSH result to the CSV
+      tags:
+        - ssh
       local_action:
         module: lineinfile
         path: "{{ csv_file }}"
-        line: "{{ inventory_hostname }},SSH,{{ 'SUCCESS' if ssh_result.rc == 0 else 'FAILED' }}"
+        line: "{{ inventory_hostname }},SSH,{{ ssh_result.stderr | replace('(UNKNOWN) ', '') }}"
       delegate_to: localhost
 
     - name: Append SNMP result to the CSV
+      tags:
+        - snmp
       local_action:
         module: lineinfile
         path: "{{ csv_file }}"
-        line: "{{ inventory_hostname }},SNMP,{{ 'SUCCESS' if snmp_result.rc == 0 else 'FAILED' }}"
+        line: "{{ inventory_hostname }},SNMP,{{ snmp_result.stderr | replace('(UNKNOWN) ', '') }}"
+      delegate_to: localhost
 
 # EOF
