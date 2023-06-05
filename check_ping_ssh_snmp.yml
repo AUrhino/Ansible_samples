@@ -5,7 +5,6 @@
 
 - name: Connectivity testing PING, SSH and SNMP
   hosts: all
-  #hosts: nul-w*
   connection: local
   gather_facts: false
 
@@ -26,7 +25,7 @@
       tags:
         - ssh
       #shell: ssh -o ConnectTimeout=5 {{ inventory_hostname }} exit   # Turned off as too hard at the moment. Will just nc to port
-      #Sample NetCat on port 22:    nc -vn -w1 10.37.32.244 22
+      #Sample NetCat on port 22:    nc -vn -w1 10.10.10.10 22
       shell: /usr/bin/nc -vnw1 {{ inventory_hostname }} 22
       register: ssh_result
       ignore_errors: true
